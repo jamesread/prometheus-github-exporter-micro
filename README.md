@@ -7,7 +7,7 @@ I wrote this because infinityworks/github-exporter looks to be semi-abandoned - 
 
 ## Sample output
 
-----
+```
 github_repo_stars{repo="olivetin/olivetin"} 303.0
 github_repo_stars{repo="jamesread/prometheus-gmail-exporter"} 13.0
 # HELP github_repo_issues GitHub Repo issues
@@ -22,8 +22,7 @@ github_repo_forks{repo="jamesread/prometheus-gmail-exporter"} 4.0
 # TYPE github_repo_subscribers gauge
 github_repo_subscribers{repo="olivetin/olivetin"} 8.0
 github_repo_subscribers{repo="jamesread/prometheus-gmail-exporter"} 3.0
-
-----
+```
 
 ## Installation / Usage 
 
@@ -33,9 +32,9 @@ Published on dockerhub as `docker.io/jamesread/prometheus-github-exporter-micro`
 
 Example usage;
 
-----
+```
 docker create --name gh_exporter -e REPOS="olivetin/olivetin,upsilonproject/upsilon-drone,upsilonproject/upsilon-custodian" jamesread/prometheus-github-exporter-micro 
-----
+```
 
 
 ### Clone this repo and run the script.
