@@ -7,7 +7,8 @@ I wrote this because infinityworks/github-exporter looks to be semi-abandoned - 
 
 ## Sample output
 
-```
+
+```ini
 github_repo_stars{repo="olivetin/olivetin"} 303.0
 github_repo_stars{repo="jamesread/prometheus-gmail-exporter"} 13.0
 # HELP github_repo_issues GitHub Repo issues
