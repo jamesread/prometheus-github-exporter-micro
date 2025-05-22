@@ -28,6 +28,7 @@ jobs:
             @semantic-release/commit-analyzer
             @semantic-release/git
             @semantic-release/github
+          semantic_version: 24.2.3  # https://github.com/cycjimmy/semantic-release-action/issues/243
 
         env:
           GH_TOKEN: ${{ secrets.CONTAINER_TOKEN }}
