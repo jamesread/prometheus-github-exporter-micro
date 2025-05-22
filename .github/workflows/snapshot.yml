@@ -1,10 +1,10 @@
 ---
-name: make tests and lint
+name: release pipeline
 
 on: [push, pull_request]
 
 jobs:
-  makeTestsLint:
+  snapshot:
     runs-on: ubuntu-latest
     name: Make Tests and Lint
     steps:
@@ -33,3 +33,29 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.CONTAINER_TOKEN }}
           GITHUB_TOKEN: ${{ secrets.CONTAINER_TOKEN }}
+
+  docker:
+    runs-on: ubuntu-latest
+    if: github.ref_type != 'tag'
+    needs: [snapshot]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - uses: docker/login-action@v3
+        with:
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+          registry: ghcr.io
+
+      - name: Build the Docker image
+        run: docker build . --file Dockerfile --tag ghcr.io/jamesread/prometheus-exporter-github-micro:${{ github.ref_name }}
+
+      - name: Push the docker image
+        run: docker push ghcr.io/jamesread/prometheus-exporter-github-micro:${{ github.ref_name }}
+
+      - name: Tag the docker image
+        run: docker tag ghcr.io/jamesread/prometheus-exporter-github-micro:${{ github.ref_name }} ghcr.io/jamesread/prometheus-exporter-github-micro:latest
+
+      - name: Push the docker image
+        run: docker push ghcr.io/jamesread/prometheus-exporter-github-micro:latest

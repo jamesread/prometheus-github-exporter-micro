@@ -82,6 +82,9 @@ def get_repos(repos, users):
         ret.add(repo)
 
     for user in users:
+        if user == "":
+            continue
+
         page = 1
         while True:
             logging.info(f"Fetching repos for user {user} on page {page}")
