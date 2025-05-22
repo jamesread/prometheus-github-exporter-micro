@@ -1,0 +1,34 @@
+---
+name: make tests and lint
+
+on: [push, pull_request]
+
+jobs:
+  makeTestsLint:
+    runs-on: ubuntu-latest
+    name: Make Tests and Lint
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: install coverage
+        run: sudo apt-get install python3-coverage python3-pytest python3-configargparse pylint
+
+      - name: make tests
+        run: make tests-debian
+
+      - name: make lint
+        run: make lint-debian
+
+      - name: release
+        if: github.ref_type != 'tag'
+        uses: cycjimmy/semantic-release-action@v4
+        with:
+          extra_plugins: |
+            @semantic-release/commit-analyzer
+            @semantic-release/git
+            @semantic-release/github
+
+        env:
+          GH_TOKEN: ${{ secrets.CONTAINER_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.CONTAINER_TOKEN }}
