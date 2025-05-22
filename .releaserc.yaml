@@ -5,5 +5,8 @@ plugins:
   - '@semantic-release/commit-analyzer'
   - '@semantic-release/github'
   - '@semantic-release/git'
+  - - '@semantic-release/exec'
+    - publishCmd: |
+        make release
 
 tagFormat: '${version}'
