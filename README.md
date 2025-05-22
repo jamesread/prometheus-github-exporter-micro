@@ -30,18 +30,18 @@ github_repo_subscribers{repo="jamesread/prometheus-gmail-exporter"} 3.0
 
 ## Installation / Usage
 
-### Docker image
+### Option 1) Docker image
 
 Published on dockerhub as `docker.io/jamesread/prometheus-github-exporter-micro`.
 
 Example usage;
 
 ```
-docker create --name gh_exporter -e REPOS="olivetin/olivetin,upsilonproject/upsilon-drone,upsilonproject/upsilon-custodian" jamesread/prometheus-github-exporter-micro
+docker create --name gh_exporter -p 9171 -e REPOS="olivetin/olivetin,upsilonproject/upsilon-drone,upsilonproject/upsilon-custodian" jamesread/prometheus-github-exporter-micro
 ```
 
 
-### Clone this repo and run the script.
+### Option 2) Clone this repo and run the script.
 
 ^^ :-)
 
@@ -50,6 +50,7 @@ docker create --name gh_exporter -e REPOS="olivetin/olivetin,upsilonproject/upsi
 Configuration is from environment variables only.
 
 * `REPOS` - a comma-delimited list of repos you want to get metrics for. eg: `export REPOS="olivetin/olivetin,jamesread/prometheus-gmail-exporter"
+* `USERS` - a comma-delimited list of users you want to get metrics for (iterate over all repos). eg: `export USERS="jamesread"`
 * `PROM_PORT` - The port for the HTTP server to listen on, by default it is `9171`.
 * `GITHUB_TOKEN` - A 32-character GitHub API token, otherwise requests to the API as a guest are likely to be rate limited quickly.
 * `UPDATE_DELAY_SECONDS` - How long to sleep between updating all repos. Default `3600` seconds.
