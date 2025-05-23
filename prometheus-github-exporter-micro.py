@@ -80,8 +80,9 @@ def get_workflow_gauge(repo, workflow, metric):
 
 @flaskapp.route('/')
 def index():
-    ret = "<h1>Prometheus GitHub Exporter (Micro)</h1>"
-
+    ret = ""
+    ret += "<h1>Prometheus GitHub Exporter (Micro)</h1>"
+    ret += "<p>Metrics are available at <a href='/metrics'>/metrics</a></p>"
     return ret
 
 
@@ -197,6 +198,9 @@ def update_loop():
         rate_limit = json.loads(res.text)['resources']['core']
         logging.info("Rate limit status: %s out of %s",
                      rate_limit['used'], rate_limit['limit'])
+
+        get_gauge("rate_limit", "used").set(rate_limit['used'])
+        get_gauge("rate_limit", "limit").set(rate_limit['limit'])
 
         if rate_limit['used'] >= rate_limit['limit']:
             logging.warning("Rate limit will reset at: %s",
