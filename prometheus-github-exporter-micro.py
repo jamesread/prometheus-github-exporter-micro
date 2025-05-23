@@ -14,8 +14,7 @@ from prometheus_client import make_wsgi_app, Gauge
 
 import requests
 
-
-from flask import Flask, Response, request, session, redirect
+from flask import Flask, Response
 
 from werkzeug.middleware.dispatcher import DispatcherMiddleware
 
@@ -57,8 +56,6 @@ def get_latest_run(repo, workflow_id):
 
 
 def get_gauge(repo, metric):
-    global GAUGE_REGISTRY
-
     if metric not in GAUGE_REGISTRY:
         g = Gauge("github_repo_" + metric, 'GitHub Repo ' + metric, [
             "repo",
@@ -70,8 +67,6 @@ def get_gauge(repo, metric):
 
 
 def get_workflow_gauge(repo, workflow, metric):
-    global GAUGE_REGISTRY
-
     if metric not in GAUGE_REGISTRY:
         g = Gauge("github_workflow_" + metric, 'GitHub Workflow ' + metric, [
             "repo",
@@ -113,7 +108,7 @@ def get_repos(repos, users):
 
         page = 1
         while True:
-            logging.info(f"Fetching repos for user {user} on page {page}")
+            logging.info("Fetching repos for user %s on page %s", user, page)
 
             sleep(3)
 
@@ -207,9 +202,9 @@ def update_loop():
             logging.warning("Rate limit will reset at: %s",
                             datetime.fromtimestamp(rate_limit['reset']))
 
-        sleepySeconds = os.getenv("UPDATE_DELAY_SECONDS", 3600)
+        sleepy_seconds = os.getenv("UPDATE_DELAY_SECONDS", 3600)
         logging.info(
-            "Finished updates. Sleeping for %s seconds", sleepySeconds)
-        sleep(sleepySeconds)
+            "Finished updates. Sleeping for %s seconds", sleepy_seconds)
+        sleep(sleepy_seconds)
 
 main()
