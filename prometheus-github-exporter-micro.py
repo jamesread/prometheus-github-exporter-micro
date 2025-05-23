@@ -23,6 +23,7 @@ import waitress
 GAUGE_REGISTRY = {}
 REPOS = os.getenv("REPOS", "").split(",")
 USERS = os.getenv("USERS", "").split(",")
+USERS_IGNORE_FORKS = os.getenv("USERS_IGNORE_FORKS")
 PROM_PORT = int(os.getenv("PROM_PORT", "9171"))
 GITHUB_TOKEN = os.getenv("GITHUB_TOKEN", "")
 
@@ -134,6 +135,10 @@ def get_repos(repos, users):
                 break
 
             for github_repo in github_repos:
+                if USERS_IGNORE_FORKS and github_repo['fork']:
+                    logging.info("Ignoring forked repo %s", github_repo['full_name'])
+                    continue
+
                 ret.add(github_repo['full_name'])
 
             page += 1
@@ -178,52 +183,71 @@ def update_rate_limits():
 
         sleep(30)
 
+def api_exception(e):
+    if e.response.status_code == 403:
+        logging.warning("Caught 403, most likely the rate limit is exceeded.")
+    else:
+        logging.warning("HTTP Error: %s", str(e))
+
+    logging.warning("Sleeping for additional 20 seconds because of error")
+    sleep(20)
 
 def update_loop():
     while True:
-        for repo in get_repos(REPOS, USERS):
-            logging.info("Updating %s", repo)
+        try:
+            for repo in get_repos(REPOS, USERS):
+                try:
+                    update_single_repo(repo)
 
-            res = requests.get("https://api.github.com/repos/" +
-                               repo, headers=REQUEST_HEADERS)
+                except requests.exceptions.HTTPError as e:
+                    api_exception(e)
 
-            if res.status_code != 200:
-                logging.warning("API HTTP Status: %s", res.status_code)
-                continue
-
-            try:
-                github_repo = json.loads(res.text)
-            except json.decoder.JSONDecodeError as e:
-                logging.warning("Failed to decode GitHub JSON: %s", str(e))
-                continue
-
-            get_repo_gauge(repo, "stars").set(github_repo['stargazers_count'])
-            get_repo_gauge(repo, "issues").set(github_repo['open_issues_count'])
-            get_repo_gauge(repo, "forks").set(github_repo['forks'])
-            get_repo_gauge(repo, "subscribers").set(
-                github_repo['subscribers_count'])
-
-            for wf in get_enabled_workflows(repo):
-                logging.info("Updating workflow %s : %s", repo, wf['name'])
-
-                latest_run = get_latest_run(repo, wf['id'])
-                if latest_run:
-                    logging.info("Latest run for workflow %s: %s",
-                                 wf['name'], latest_run['status'])
-
-                    res = 1 if latest_run['conclusion'] == 'success' else 0
-
-                    get_workflow_gauge(repo, wf['name'], "conclusion").set(res)
-                    get_workflow_gauge(repo, wf['name'], "updated_at").set(
-                        parser.isoparse(latest_run['updated_at']).timestamp()
-                    )
-                else:
-                    logging.warning(
-                        "No runs found for workflow %s", wf['name'])
+        except requests.exceptions.HTTPError as e:
+            api_exception(e)
 
         sleepy_seconds = os.getenv("UPDATE_DELAY_SECONDS", 3600)
         logging.info(
             "Finished updates. Sleeping for %s seconds", sleepy_seconds)
         sleep(sleepy_seconds)
 
+
+def update_single_repo(repo):
+    logging.info("Updating repo %s", repo)
+
+    res = requests.get("https://api.github.com/repos/" +
+                       repo, headers=REQUEST_HEADERS)
+
+    if res.status_code != 200:
+        logging.warning("API HTTP Status: %s", res.status_code)
+        return
+
+    try:
+        github_repo = json.loads(res.text)
+    except json.decoder.JSONDecodeError as e:
+        logging.warning("Failed to decode GitHub JSON: %s", str(e))
+        return
+
+    get_repo_gauge(repo, "stars").set(github_repo['stargazers_count'])
+    get_repo_gauge(repo, "issues").set(github_repo['open_issues_count'])
+    get_repo_gauge(repo, "forks").set(github_repo['forks'])
+    get_repo_gauge(repo, "subscribers").set(
+        github_repo['subscribers_count'])
+
+    for wf in get_enabled_workflows(repo):
+        logging.info("Updating workflow %s : %s", repo, wf['name'])
+
+        latest_run = get_latest_run(repo, wf['id'])
+        if latest_run:
+            logging.info("Latest run for workflow %s: %s",
+                         wf['name'], latest_run['status'])
+
+            res = 1 if latest_run['conclusion'] == 'success' else 0
+
+            get_workflow_gauge(repo, wf['name'], "conclusion").set(res)
+            get_workflow_gauge(repo, wf['name'], "updated_at").set(
+                parser.isoparse(latest_run['updated_at']).timestamp()
+            )
+        else:
+            logging.warning(
+                "No runs found for workflow %s", wf['name'])
 main()
