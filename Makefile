@@ -5,6 +5,7 @@ docker:
 	docker build . -t jamesread/prometheus-github-exporter-micro
 
 release:
+	env
 	docker build . --file Dockerfile --tag ghcr.io/jamesread/prometheus-exporter-github-micro:${RELEASE_VERSION}
 	docker push ghcr.io/jamesread/prometheus-exporter-github-micro:${RELEASE_VERSION}
 	docker tag ghcr.io/jamesread/prometheus-exporter-github-micro:${RELEASE_VERSION} ghcr.io/jamesread/prometheus-exporter-github-micro:latest
