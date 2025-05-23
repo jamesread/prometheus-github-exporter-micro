@@ -10,6 +10,7 @@ RUN dnf -y update && \
 	python3-pyyaml \
 	python3-flask \
 	python3-waitress \
+	python3-dateutil \
 	python3-prometheus_client && \
 	dnf clean all
 
