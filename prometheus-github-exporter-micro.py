@@ -35,6 +35,10 @@ else:
 flaskapp = Flask('prometheus-github-exporter-micro')
 flaskapp.secret_key = os.urandom(24)
 
+apirate_usedc = Gauge("github_apirate_usedc", 'GitHub API Rate Used Count')
+apirate_limit = Gauge("github_apirate_limit", 'GitHub API Rate Limit')
+apirate_avail = Gauge("github_apirate_avail", 'GitHub API Rate Available Count')
+apirate_reset = Gauge("github_apirate_reset", 'GitHub API Rate Reset Time')
 
 def get_enabled_workflows(repo):
     base_url = "https://api.github.com/repos/" + repo
@@ -55,7 +59,7 @@ def get_latest_run(repo, workflow_id):
     return runs[0] if runs else None
 
 
-def get_gauge(repo, metric):
+def get_repo_gauge(repo, metric):
     if metric not in GAUGE_REGISTRY:
         g = Gauge("github_repo_" + metric, 'GitHub Repo ' + metric, [
             "repo",
@@ -169,10 +173,10 @@ def update_loop():
                 logging.warning("Failed to decode GitHub JSON: %s", str(e))
                 continue
 
-            get_gauge(repo, "stars").set(github_repo['stargazers_count'])
-            get_gauge(repo, "issues").set(github_repo['open_issues_count'])
-            get_gauge(repo, "forks").set(github_repo['forks'])
-            get_gauge(repo, "subscribers").set(
+            get_repo_gauge(repo, "stars").set(github_repo['stargazers_count'])
+            get_repo_gauge(repo, "issues").set(github_repo['open_issues_count'])
+            get_repo_gauge(repo, "forks").set(github_repo['forks'])
+            get_repo_gauge(repo, "subscribers").set(
                 github_repo['subscribers_count'])
 
             for wf in get_enabled_workflows(repo):
@@ -199,8 +203,10 @@ def update_loop():
         logging.info("Rate limit status: %s out of %s",
                      rate_limit['used'], rate_limit['limit'])
 
-        get_gauge("rate_limit", "used").set(rate_limit['used'])
-        get_gauge("rate_limit", "limit").set(rate_limit['limit'])
+        apirate_usedc.set(rate_limit['used'])
+        apirate_limit.set(rate_limit['limit'])
+        apirate_avail.set(rate_limit['remaining'])
+        apirate_reset.set(rate_limit['reset'])
 
         if rate_limit['used'] >= rate_limit['limit']:
             logging.warning("Rate limit will reset at: %s",
