@@ -7,6 +7,6 @@ plugins:
   - '@semantic-release/git'
   - - '@semantic-release/exec'
     - publishCmd: |
-        make release
+        RELEASE_VERSION="${nextRelease.version}" make release
 
 tagFormat: '${version}'
