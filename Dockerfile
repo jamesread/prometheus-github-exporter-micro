@@ -6,6 +6,4 @@ RUN dnf update -y && dnf install python python3-requests python3-prometheus_clie
 
 COPY prometheus-github-exporter-micro.py /opt
 
-RUN chmod +x /opt/prometheus-github-exporter-micro.py
-
 ENTRYPOINT ["/opt/prometheus-github-exporter-micro.py"]
