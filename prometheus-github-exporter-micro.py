@@ -152,7 +152,31 @@ def main():
     t = Thread(target=start_waitress)
     t.start()
 
+    t_rate_limit = Thread(target=update_rate_limits)
+    t_rate_limit.start()
+
     update_loop()
+
+def update_rate_limits():
+    while True:
+        logging.info("Updating rate limits")
+
+        res = requests.get("https://api.github.com/rate_limit",
+                           headers=REQUEST_HEADERS)
+        rate_limit = json.loads(res.text)['resources']['core']
+        logging.info("Rate limit status: %s out of %s",
+                     rate_limit['used'], rate_limit['limit'])
+
+        apirate_usedc.set(rate_limit['used'])
+        apirate_limit.set(rate_limit['limit'])
+        apirate_avail.set(rate_limit['remaining'])
+        apirate_reset.set(rate_limit['reset'])
+
+        if rate_limit['used'] >= rate_limit['limit']:
+            logging.warning("Rate limit will reset at: %s",
+                            datetime.fromtimestamp(rate_limit['reset']))
+
+        sleep(30)
 
 
 def update_loop():
@@ -196,21 +220,6 @@ def update_loop():
                 else:
                     logging.warning(
                         "No runs found for workflow %s", wf['name'])
-
-        res = requests.get("https://api.github.com/rate_limit",
-                           headers=REQUEST_HEADERS)
-        rate_limit = json.loads(res.text)['resources']['core']
-        logging.info("Rate limit status: %s out of %s",
-                     rate_limit['used'], rate_limit['limit'])
-
-        apirate_usedc.set(rate_limit['used'])
-        apirate_limit.set(rate_limit['limit'])
-        apirate_avail.set(rate_limit['remaining'])
-        apirate_reset.set(rate_limit['reset'])
-
-        if rate_limit['used'] >= rate_limit['limit']:
-            logging.warning("Rate limit will reset at: %s",
-                            datetime.fromtimestamp(rate_limit['reset']))
 
         sleepy_seconds = os.getenv("UPDATE_DELAY_SECONDS", 3600)
         logging.info(
